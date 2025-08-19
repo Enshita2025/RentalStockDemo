@@ -45,31 +45,44 @@
     .panel{background:var(--panel); border:1px solid #1f2937; border-radius:14px; padding:12px}
 
     .scroller{ overflow-x:auto; -webkit-overflow-scrolling: touch; border-radius:12px; }
-    .grid{ min-width:720px; display:grid; grid-template-columns: repeat(7,1fr); border:1px solid var(--grid); border-radius:12px; overflow:hidden }
-    .grid .head{ background:#0b1220; border-bottom:1px solid var(--grid); display:grid; grid-template-columns: repeat(7,1fr)}
-    .grid .head div{ padding:10px; text-align:center; border-left:1px solid var(--grid)}
-    .grid .head div:first-child{border-left:none}
-
-    .row1{ 
+    .grid { min-width:320px; display:grid; grid-template-columns: 1fr; border:1px solid var(--grid); border-radius:12px; overflow:hidden }
+    .grid .head { 
+      background:#0b1220; 
+      border-bottom:1px solid var(--grid); 
       display:grid; 
-      grid-template-columns: 1fr; /* ← 1列に変更 */
+      grid-template-columns: repeat(7,96px); /* 120%に拡大 */
     }
-    .cell{ 
-      display:grid; 
-      grid-template-columns: repeat(7,1fr); /* ← 各日を横並びに */
-      border-top:1px solid var(--grid); 
-      border-left:1px solid var(--grid); 
-      padding:0; 
-      min-height:160px; 
-      position:relative 
+    .grid .head > div {
+      text-align: center;
+      width: 96px;         /* 120%に拡大 */
+      margin: 5px auto;
+      box-sizing: border-box;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .cell {
+      display: grid;
+      grid-template-columns: repeat(7, 96px); /* 120%に拡大 */
+      border-top: 1px solid var(--grid);
+      border-left: 1px solid var(--grid);
+      padding: 0;
+      min-height: 160px;
+      position: relative;
+    }
+    .cell > div {
+      margin-left: 10px;
+      margin-right: 10px;
     }
     .cell .blk{ 
-      margin:10px; /* AM/PMブロックの余白調整 */
+      margin:5px auto;
+      width:96px;          /* 120%に拡大 */
+      min-width:0;
+      max-width:100%;
     }
     .cell .memo{ position:absolute; right:8px; top:8px; font-size:12px; color:var(--muted) }
 
     .blk{ display:grid; grid-template-rows: auto auto auto; gap:2px; padding:6px 8px; border:1px dashed #2a3a50; border-radius:8px }
-    .blk + .blk{ margin-top:8px }
+    .blk + .blk{ margin-top:3px }
     .lbl{ font-weight:700; letter-spacing:.02em }
     .ln{ font-size:13px; color:var(--muted) }
 
@@ -78,7 +91,6 @@
     .danger{ background:linear-gradient(180deg, rgba(239,68,68,.08), rgba(239,68,68,.02)) }
 
     .legend{ display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--muted) }
-    .legend .e{ display:flex; gap:6px; align-items:center }
 
     @media(max-width:980px){
       .grid{ min-width:680px }
@@ -97,6 +109,12 @@
       body{ background:#fff; color:#000 }
       .grid, .cell, .head{ border-color:#aaa }
     }
+
+    /* 追加スタイル */
+    .bg-kei { background:linear-gradient(180deg,#e6fbe7,#d1fae5); }
+    .bg-komagata { background:linear-gradient(180deg,#e6f3fb,#dbeafe); }
+    .bg-minivan { background:linear-gradient(180deg,#fbe6f3,#fce7f3); }
+    .bg-boxy { background:linear-gradient(180deg,#fbfbe6,#fef9c3); }
   </style>
 </head>
 <body>
@@ -116,12 +134,7 @@
   <section class="panel controls" aria-label="設定とタブ">
     <div class="legend" style="justify-content:space-between; align-items:end">
       <div>
-        <div style="font-weight:700">週：<span id="weekLabel">YYYY/MM/DD 〜 YYYY/MM/DD</span></div>
-      </div>
-      <div>
-        <span class="e">残数OK → 緑</span>
-        <span class="e">残数0 → 黄</span>
-        <span class="e">超過 → 赤</span>
+        <!-- <div style="font-weight:700">週：<span id="weekLabel">YYYY/MM/DD 〜 YYYY/MM/DD</span></div> -->
       </div>
     </div>
     <div class="tabs" id="tabs"></div>
@@ -141,10 +154,10 @@
   const cfg = {
     slots: [ { id:'AM', name:'AM' }, { id:'PM', name:'PM' } ],
     categories: [
-      { id:'A', name:'軽', fleet:5 },
-      { id:'B', name:'コンパクト', fleet:4 },
+      { id:'A', name:'軽自動車', fleet:5 },
+      { id:'B', name:'小型普通', fleet:4 },
       { id:'C', name:'ミニバン', fleet:3 },
-      { id:'D', name:'軽トラック', fleet:2 }
+      { id:'D', name:'BOXY', fleet:2 }
     ]
   };
 
@@ -172,21 +185,29 @@
   let anchor = startOfWeek(new Date());
   let selectedCatId = localStorage.getItem(selKEY) || cfg.categories[0].id;
 
-  const weekLabel = document.getElementById('weekLabel');
+  // const weekLabel = document.getElementById('weekLabel');
   const calendar = document.getElementById('calendar');
   const prevWeekBtn = document.getElementById('prevWeek');
   const nextWeekBtn = document.getElementById('nextWeek');
   const todayBtn = document.getElementById('today');
   const tabs = document.getElementById('tabs');
 
-  function weekDates(){ return Array.from({length:7}, (_,i)=>{ const d = new Date(anchor); d.setDate(d.getDate()+i); return d; }); }
+  function weekDates(){
+    // 月曜～日曜の配列を返す
+    const arr = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(anchor); d.setDate(d.getDate()+i);
+      arr.push(d);
+    }
+    return arr;
+  }
 
   function buildTabsUI(){
     tabs.innerHTML = '';
     cfg.categories.forEach(c => {
       const b = document.createElement('button');
       b.className = 'tab' + (c.id===selectedCatId?' active':'');
-      b.textContent = `${c.name}（${c.id}）`;
+      b.textContent = `${c.name}`;
       b.onclick = () => { selectedCatId = c.id; localStorage.setItem(selKEY, selectedCatId); render(); };
       tabs.appendChild(b);
     });
@@ -195,8 +216,19 @@
   function render(){
     buildTabsUI();
     const dates = weekDates();
-    weekLabel.textContent = `${fmtMD(dates[0])} 〜 ${fmtMD(dates[6])}`;
+    // weekLabel.textContent = `${fmtMD(dates[0])} 〜 ${fmtMD(dates[6])}`;
 
+    // パネルの背景色切り替え
+    const panel = document.querySelector('.panel[aria-label="在庫カレンダー"]');
+    panel.classList.remove('bg-kei','bg-komagata','bg-minivan','bg-boxy');
+    switch(selectedCatId){
+      case 'A': panel.classList.add('bg-kei'); break;
+      case 'B': panel.classList.add('bg-komagata'); break;
+      case 'C': panel.classList.add('bg-minivan'); break;
+      case 'D': panel.classList.add('bg-boxy'); break;
+    }
+
+    // ヘッダー（1週間分）
     const head = document.createElement('div');
     head.className = 'head';
     dates.forEach(d => {
@@ -205,11 +237,10 @@
       head.appendChild(dv);
     });
 
-    // 1行（row1）に7列（各日）のセルを並べる
+    // 1週間分のセル
     const row = document.createElement('div');
     row.className = 'row1';
 
-    // 1行に7セル（各日）を並べる
     const cell = document.createElement('div');
     cell.className = 'cell';
 
@@ -224,11 +255,11 @@
 
       // PM
       const needPM = demoData[k]?.PM?.[selectedCatId] ?? 0;
-      const fleetPM = fleetAM; // 同一クラス
+      const fleetPM = fleetAM;
       const restPM = fleetPM - needPM;
       const clsPM = restPM < 0 ? 'danger' : (restPM===0 ? 'warn' : 'ok');
 
-      // 各日ごとにAM/PMを縦並び
+      // 各日ごとにAM/PMを縦並びで配置
       const dayDiv = document.createElement('div');
       dayDiv.style.display = 'flex';
       dayDiv.style.flexDirection = 'column';
