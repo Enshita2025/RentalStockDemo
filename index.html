@@ -50,9 +50,22 @@
     .grid .head div{ padding:10px; text-align:center; border-left:1px solid var(--grid)}
     .grid .head div:first-child{border-left:none}
 
-    .row1{ display:grid; grid-template-columns: repeat(7,1fr) }
-    .cell{ border-top:1px solid var(--grid); border-left:1px solid var(--grid); padding:10px; min-height:160px; position:relative }
-    .row1 .cell:first-child{ border-left:none }
+    .row1{ 
+      display:grid; 
+      grid-template-columns: 1fr; /* ← 1列に変更 */
+    }
+    .cell{ 
+      display:grid; 
+      grid-template-columns: repeat(7,1fr); /* ← 各日を横並びに */
+      border-top:1px solid var(--grid); 
+      border-left:1px solid var(--grid); 
+      padding:0; 
+      min-height:160px; 
+      position:relative 
+    }
+    .cell .blk{ 
+      margin:10px; /* AM/PMブロックの余白調整 */
+    }
     .cell .memo{ position:absolute; right:8px; top:8px; font-size:12px; color:var(--muted) }
 
     .blk{ display:grid; grid-template-rows: auto auto auto; gap:2px; padding:6px 8px; border:1px dashed #2a3a50; border-radius:8px }
@@ -192,13 +205,16 @@
       head.appendChild(dv);
     });
 
+    // 1行（row1）に7列（各日）のセルを並べる
     const row = document.createElement('div');
     row.className = 'row1';
 
+    // 1行に7セル（各日）を並べる
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+
     dates.forEach(d => {
       const k = iso(d);
-      const cell = document.createElement('div');
-      cell.className = 'cell';
 
       // AM
       const needAM = demoData[k]?.AM?.[selectedCatId] ?? 0;
@@ -212,7 +228,11 @@
       const restPM = fleetPM - needPM;
       const clsPM = restPM < 0 ? 'danger' : (restPM===0 ? 'warn' : 'ok');
 
-      cell.innerHTML = `
+      // 各日ごとにAM/PMを縦並び
+      const dayDiv = document.createElement('div');
+      dayDiv.style.display = 'flex';
+      dayDiv.style.flexDirection = 'column';
+      dayDiv.innerHTML = `
         <div class="blk ${clsAM}">
           <div class="lbl">AM</div>
           <div class="ln">予約: ${needAM}台</div>
@@ -224,9 +244,10 @@
           <div class="ln">在庫: ${fleetPM}台</div>
         </div>
       `;
-
-      row.appendChild(cell);
+      cell.appendChild(dayDiv);
     });
+
+    row.appendChild(cell);
 
     calendar.innerHTML = '';
     calendar.appendChild(head);
