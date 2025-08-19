@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>せきも｜社員向け 在庫カレンダー（デモ・タブ切替）</title>
+  <style>
+    :root{
+      --bg:#0f172a;           /* slate-900 */
+      --panel:#111827;        /* gray-900 */
+      --muted:#94a3b8;        /* slate-400 */
+      --text:#e5e7eb;         /* gray-200 */
+      --accent:#22c55e;       /* green-500 */
+      --accent-2:#60a5fa;     /* blue-400 */
+      --warn:#f59e0b;         /* amber-500 */
+      --danger:#ef4444;       /* red-500 */
+      --ok:#10b981;           /* emerald-500 */
+      --grid:#1f2937;         /* gray-800 */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      background:linear-gradient(180deg, var(--bg), #0b1220);
+      color:var(--text);
+    }
+    header{
+      position:sticky; top:0; z-index:10; backdrop-filter: blur(6px);
+      background:rgba(15,23,42,.85); border-bottom:1px solid #1f2937;
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:12px 14px}
+    h1{font-size:20px; margin:6px 0 2px}
+    .sub{color:var(--muted); font-size:12px}
+
+    .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:10px 0}
+    button, .btn{
+      background:#111827; color:var(--text); border:1px solid #334155; padding:8px 10px; border-radius:10px; cursor:pointer;
+      transition:.15s transform ease, .15s background ease; font-size:14px;
+    }
+    button:hover{background:#0b1220; transform:translateY(-1px)}
+    .btn-ghost{background:transparent; border:1px dashed #334155}
+    .btn-accent{background:linear-gradient(135deg,#16a34a,#22c55e); border:0; color:#06260f}
+
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px }
+    .tab{
+      padding:6px 10px; border-radius:999px; border:1px solid #334155; color:var(--muted); background:#0b1220; cursor:pointer; font-size:13px
+    }
+    .tab.active{ color:#052b12; background:linear-gradient(135deg,#22c55e,#86efac); border-color:transparent; font-weight:700 }
+
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .grow{flex:1}
+
+    .panel{background:var(--panel); border:1px solid #1f2937; border-radius:14px; padding:12px}
+
+    .scroller{ overflow-x:auto; -webkit-overflow-scrolling: touch; border-radius:12px; }
+    .grid{ min-width:720px; display:grid; grid-template-columns: 110px repeat(7,1fr); border:1px solid var(--grid); border-radius:12px; overflow:hidden }
+    .grid .head{ background:#0b1220; border-bottom:1px solid var(--grid); display:grid; grid-template-columns: 110px repeat(7,1fr)}
+    .grid .head div{ padding:10px; text-align:center; border-left:1px solid var(--grid)}
+    .grid .head div:first-child{border-left:none; text-align:left}
+
+    .slotrow{display:grid; grid-template-columns: 110px repeat(7,1fr) }
+    .slotlbl{ background:#0b1220; border-top:1px solid var(--grid); border-right:1px solid var(--grid); padding:10px; font-weight:600; position:sticky; left:0 }
+    .cell{ border-top:1px solid var(--grid); border-left:1px solid var(--grid); padding:10px; min-height:120px; position:relative }
+    .cell .memo{ position:absolute; right:8px; top:8px; font-size:12px; color:var(--muted) }
+
+    .cap{display:grid; grid-template-columns: 1fr auto; gap:6px; align-items:center; margin-top:8px; padding:8px; border:1px solid #263142; border-radius:10px}
+    .cap strong{ font-size:13px }
+    .cap .nums{ font-size:12px; color:var(--muted) }
+    .cap .ctrl{ display:flex; align-items:center; gap:6px }
+    .pill{ font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid #2a3a50 }
+    .ok{ color:var(--ok); border-color:#14532d }
+    .warn{ color:var(--warn); border-color:#4b3a13 }
+    .danger{ color:var(--danger); border-color:#4b1717 }
+
+    .footer{ color:var(--muted); font-size:12px; margin:12px 0 30px }
+
+    .config{display:grid; grid-template-columns: repeat(4,1fr); gap:10px}
+    .config .item{ background:#0b1220; padding:10px; border:1px solid var(--grid); border-radius:10px }
+    .config label{ display:block; font-size:12px; color:var(--muted) }
+    .config input[type="text"], .config input[type="number"]{ width:100%; background:#0e1526; color:var(--text); border:1px solid #2a3a50; border-radius:8px; padding:8px; margin-top:6px }
+
+    .legend{ display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--muted) }
+    .legend .e{ display:flex; gap:6px; align-items:center }
+
+    .sp{ height:8px }
+
+    @media(max-width:980px){
+      .grid{ grid-template-columns: 90px repeat(7,1fr) }
+      .grid .head{ grid-template-columns: 90px repeat(7,1fr) }
+      .slotlbl{ padding:8px; position:sticky; left:0; z-index:1 }
+      .cell{ min-height:140px }
+      .wrap{ padding:10px 10px }
+      .toolbar{ gap:6px }
+    }
+
+    @media(max-width:520px){
+      h1{font-size:18px}
+      .toolbar button{ padding:6px 8px; font-size:13px }
+      .tab{ padding:5px 10px; font-size:12px }
+      .cap{ padding:6px }
+    }
+
+    @media print{
+      header,.toolbar,.panel.controls,.tabs{ display:none }
+      body{ background:#fff; color:#000 }
+      .grid, .cell, .slotlbl, .head{ border-color:#aaa }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>社員向け 在庫カレンダー（デモ｜クラス別タブ切替）</h1>
+    <div class="sub">1日を <strong>AM(9:00-12:00)</strong> / <strong>PM(12:00-18:00)</strong> の2枠で管理。<strong>クラス単位</strong>で表示を切替えます。</div>
+    <div class="toolbar">
+      <button id="prevWeek">◀ 先週</button>
+      <button id="today">今週</button>
+      <button id="nextWeek">来週 ▶</button>
+      <div class="grow"></div>
+      <button id="sample" class="btn-ghost">サンプル投入</button>
+      <button id="exportJson" title="現在の週のデータを書き出し">JSON書き出し</button>
+      <label class="btn" for="importFile" title="JSONを読み込み"><input id="importFile" type="file" accept="application/json" hidden>JSON読み込み</label>
+      <button id="resetWeek" class="btn-ghost">この週をリセット</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel controls" aria-label="設定">
+    <div class="row" style="align-items:flex-end; gap:16px">
+      <div>
+        <div style="font-weight:700">週：</div>
+        <div id="weekLabel" class="sub">YYYY/MM/DD 〜 YYYY/MM/DD</div>
+      </div>
+      <div class="legend">
+        <span class="e"><span class="pill ok">残OK</span> 残数 1台以上</span>
+        <span class="e"><span class="pill warn">注意</span> 残数 0台</span>
+        <span class="e"><span class="pill danger">超過</span> 予約が在庫を超過</span>
+      </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="sp"></div>
+    <details>
+      <summary>在庫クラス設定（社内のみ）</summary>
+      <div class="sp"></div>
+      <div class="config" id="configArea"><!-- filled by JS --></div>
+      <div class="sp"></div>
+      <button id="saveConfig" class="btn-accent">クラス設定を保存</button>
+    </details>
+  </section>
+
+  <section class="panel" aria-label="在庫カレンダー">
+    <div class="scroller">
+      <div class="grid" id="calendar"><!-- built by JS --></div>
+    </div>
+  </section>
+
+  <p class="footer">※ 本デモはブラウザの <strong>localStorage</strong> に保存します。サーバ連携や利用者情報、ブラックリスト照会APIは含みません（実装時はAPI連携可能）。スマホは横スクロール対応。</p>
+</main>
+
+<script>
+(() => {
+  const KEY = 'seki-rentacar-inventory-v2';
+  const cfgKEY = 'seki-rentacar-config-v2';
+  const selKEY = 'seki-rentacar-selected-cat';
+
+  const defaultConfig = () => ({
+    slots: [
+      { id:'AM', name:'AM (9:00-12:00)' },
+      { id:'PM', name:'PM (12:00-18:00)' }
+    ],
+    categories: [
+      { id:'A', name:'軽', fleet:5 },
+      { id:'B', name:'コンパクト', fleet:4 },
+      { id:'C', name:'ミニバン', fleet:3 },
+      { id:'D', name:'軽トラック', fleet:2 }
+    ]
+  });
+
+  // --- state helpers ---
+  const loadCfg = () => JSON.parse(localStorage.getItem(cfgKEY) || 'null') || defaultConfig();
+  const saveCfg = (cfg) => localStorage.setItem(cfgKEY, JSON.stringify(cfg));
+  const loadAll = () => JSON.parse(localStorage.getItem(KEY) || '{}');
+  const saveAll = (obj) => localStorage.setItem(KEY, JSON.stringify(obj));
+
+  // Week utilities
+  const startOfWeek = (d) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const day = (x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; };
+  const fmt = (d) => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  let cfg = loadCfg();
+  let anchor = startOfWeek(new Date());
+  let selectedCatId = localStorage.getItem(selKEY) || (cfg.categories[0]?.id || 'A');
+
+  // DOM refs
+  const weekLabel = document.getElementById('weekLabel');
+  const calendar = document.getElementById('calendar');
+  const prevWeekBtn = document.getElementById('prevWeek');
+  const nextWeekBtn = document.getElementById('nextWeek');
+  const todayBtn = document.getElementById('today');
+  const sampleBtn = document.getElementById('sample');
+  const exportBtn = document.getElementById('exportJson');
+  const importFile = document.getElementById('importFile');
+  const resetWeekBtn = document.getElementById('resetWeek');
+  const configArea = document.getElementById('configArea');
+  const saveConfigBtn = document.getElementById('saveConfig');
+  const tabs = document.getElementById('tabs');
+
+  function weekDates(){
+    return Array.from({length:7}, (_,i)=>{ const d = new Date(anchor); d.setDate(d.getDate()+i); return d; });
+  }
+
+  function ensureDay(data, dateStr){
+    if(!data[dateStr]) data[dateStr] = { AM:{}, PM:{}, memo:'' };
+    for(const s of cfg.slots.map(s=>s.id)){
+      if(!data[dateStr][s]) data[dateStr][s] = {};
+      for(const cat of cfg.categories) if(typeof data[dateStr][s][cat.id] !== 'number') data[dateStr][s][cat.id] = 0;
+    }
+    if(typeof data[dateStr].memo !== 'string') data[dateStr].memo = '';
+  }
+
+  function readWeek(){
+    const all = loadAll();
+    const dates = weekDates();
+    const obj = {}; // subset
+    for(const d of dates){ const k = iso(d); obj[k] = JSON.parse(JSON.stringify(all[k] || {})); ensureDay(obj, k); }
+    return obj;
+  }
+  function writeWeek(weekObj){ const all = loadAll(); for(const k of Object.keys(weekObj)) all[k] = weekObj[k]; saveAll(all); }
+
+  function buildConfigUI(){
+    configArea.innerHTML = '';
+    cfg.categories.forEach((c, idx)=>{
+      const wrap = document.createElement('div');
+      wrap.className = 'item';
+      wrap.innerHTML = `
+        <label>クラス名 <input type="text" value="${c.name}" data-idx="${idx}" data-k="name"></label>
+        <label>総在庫（台）<input type="number" min="0" value="${c.fleet}" data-idx="${idx}" data-k="fleet"></label>
+        <div class="sub">ID: ${c.id}</div>
+      `;
+      configArea.appendChild(wrap);
+    });
+
+    saveConfigBtn.onclick = () => {
+      configArea.querySelectorAll('input').forEach(inp => {
+        const i = Number(inp.getAttribute('data-idx'));
+        const k = inp.getAttribute('data-k');
+        if(k==='fleet') cfg.categories[i][k] = Math.max(0, Number(inp.value||0));
+        else cfg.categories[i][k] = String(inp.value||'');
+      });
+      // 選択中IDが消えた場合は先頭にフォールバック
+      if(!cfg.categories.find(c=>c.id===selectedCatId)) selectedCatId = cfg.categories[0]?.id || 'A';
+      saveCfg(cfg);
+      render();
+    };
+  }
+
+  function buildTabsUI(){
+    tabs.innerHTML = '';
+    cfg.categories.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'tab' + (c.id===selectedCatId?' active':'');
+      b.textContent = `${c.name}（${c.id}）`;
+      b.onclick = () => { selectedCatId = c.id; localStorage.setItem(selKEY, selectedCatId); render(); };
+      tabs.appendChild(b);
+    });
+  }
+
+  function render(){
+    buildConfigUI();
+    buildTabsUI();
+
+    const dates = weekDates();
+    const weekObj = readWeek();
+
+    // Week label
+    weekLabel.textContent = `${fmt(dates[0])} 〜 ${fmt(dates[6])}`;
+
+    // Build header
+    const head = document.createElement('div');
+    head.className = 'head';
+    const h0 = document.createElement('div'); h0.textContent = '時 間 帯'; head.appendChild(h0);
+    dates.forEach(d => {
+      const dv = document.createElement('div');
+      const wd = ['月','火','水','木','金','土','日'][ (d.getDay()+6)%7 ];
+      dv.innerHTML = `<div style="font-weight:700">${fmt(d)}</div><div class=\"sub\">(${wd})</div>`;
+      head.appendChild(dv);
+    });
+
+    // Build rows for AM/PM (single category view)
+    const rowsFrag = document.createDocumentFragment();
+    const cat = cfg.categories.find(c=>c.id===selectedCatId) || cfg.categories[0];
+
+    for(const slot of cfg.slots){
+      const row = document.createElement('div'); row.className = 'slotrow';
+      const lbl = document.createElement('div'); lbl.className = 'slotlbl'; lbl.innerHTML = `<div style="font-weight:700">${slot.id}</div><div class=\"sub\">${slot.name}</div>`;
+      row.appendChild(lbl);
+
+      dates.forEach(d => {
+        const k = iso(d);
+        const cell = document.createElement('div'); cell.className = 'cell';
+        const memoBtn = document.createElement('div'); memoBtn.className = 'memo'; memoBtn.textContent = (weekObj[k].memo? '📝' : '＋メモ'); memoBtn.style.cursor = 'pointer';
+        memoBtn.onclick = () => {
+          const v = prompt(`${fmt(d)} のメモ`, weekObj[k].memo||'');
+          if(v!==null){ weekObj[k].memo = v; writeWeek(weekObj); render(); }
+        };
+        cell.appendChild(memoBtn);
+
+        const need = weekObj[k][slot.id][cat.id]||0;
+        const fleet = cat.fleet||0;
+        const rest = fleet - need;
+        const cls = rest < 0 ? 'danger' : (rest===0 ? 'warn' : 'ok');
+        const shade = rest<0? 'rgba(239,68,68,.08)' : (rest===0? 'rgba(245,158,11,.08)' : 'rgba(16,185,129,.06)');
+        cell.style.background = `linear-gradient(180deg, rgba(0,0,0,.0), ${shade})`;
+
+        const headerBar = `
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px">
+            <div class="sub">${cat.name}｜必要 <b>${need}</b> 台 / 在庫 <b>${fleet}</b> 台</div>
+            <div class="row">
+              <button class="btn-ghost" data-act="clearSlot" data-date="${k}" data-slot="${slot.id}">この枠を0に</button>
+            </div>
+          </div>`;
+        cell.insertAdjacentHTML('beforeend', headerBar);
+
+        const inner = `
+          <div class="cap">
+            <div>
+              <strong>${slot.id} 枠</strong>
+              <div class="nums">予約 <b>${need}</b> 台 / 在庫 <b>${fleet}</b> 台 <span class="pill ${cls}">残 ${rest}</span></div>
+            </div>
+            <div class="ctrl">
+              <button aria-label="減らす" data-act="dec" data-date="${k}" data-slot="${slot.id}" data-cat="${cat.id}">−</button>
+              <button aria-label="増やす" data-act="inc" data-date="${k}" data-slot="${slot.id}" data-cat="${cat.id}">＋</button>
+              <button class="btn-ghost" data-act="quick" data-date="${k}" data-slot="${slot.id}" data-cat="${cat.id}">＋一括</button>
+            </div>
+          </div>`;
+        cell.insertAdjacentHTML('beforeend', inner);
+        row.appendChild(cell);
+      });
+      rowsFrag.appendChild(row);
+    }
+
+    calendar.innerHTML = '';
+    calendar.appendChild(head);
+    calendar.appendChild(rowsFrag);
+
+    // wire buttons in cells
+    calendar.querySelectorAll('button').forEach(btn => {
+      const act = btn.getAttribute('data-act');
+      if(!act) return;
+      btn.addEventListener('click', () => {
+        const date = btn.getAttribute('data-date');
+        const slot = btn.getAttribute('data-slot');
+        const cat = btn.getAttribute('data-cat') || selectedCatId;
+        const all = readWeek();
+        if(act==='inc' || act==='dec'){
+          const cur = all[date][slot][cat]||0;
+          const next = act==='inc' ? cur+1 : Math.max(0, cur-1);
+          all[date][slot][cat] = next;
+          writeWeek(all); render();
+        } else if(act==='quick'){
+          const v = prompt("加算する予約台数", '1');
+          const n = Math.max(0, Number(v||0));
+          if(n>0){ all[date][slot][cat] += n; writeWeek(all); render(); }
+        } else if(act==='clearSlot'){
+          if(confirm('この時間帯の予約数を0にします。よろしいですか？')){
+            all[date][slot][selectedCatId] = 0;
+            writeWeek(all); render();
+          }
+        }
+      });
+    });
+  }
+
+  // navigation
+  prevWeekBtn.onclick = () => { anchor.setDate(anchor.getDate()-7); render(); };
+  nextWeekBtn.onclick = () => { anchor.setDate(anchor.getDate()+7); render(); };
+  todayBtn.onclick = () => { anchor = startOfWeek(new Date()); render(); };
+
+  // sample data
+  sampleBtn.onclick = () => {
+    const w = readWeek();
+    const days = weekDates().map(d=>iso(d));
+    const basePerCat = { A:[3,1], B:[2,1], C:[1,1], D:[1,0] }; // [AM, PM]
+    for(const day of days){
+      for(const c of cfg.categories){
+        const b = basePerCat[c.id] || [1,1];
+        w[day].AM[c.id] = Math.min(c.fleet, b[0]);
+        w[day].PM[c.id] = Math.min(c.fleet, b[1]);
+      }
+      const dObj = new Date(day);
+      w[day].memo = (dObj.getDay()===6? '週末：観光需要やや増' : '');
+    }
+    writeWeek(w); render();
+  };
+
+  // export/import
+  exportBtn.onclick = () => {
+    const w = readWeek();
+    const out = { weekStart: iso(anchor), cfg, data:w, selectedCatId };
+    const blob = new Blob([JSON.stringify(out,null,2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `inventory-week-${iso(anchor)}.json`;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  };
+
+  importFile.onchange = (e) => {
+    const f = e.target.files?.[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const obj = JSON.parse(reader.result);
+        if(obj.cfg){ cfg = obj.cfg; saveCfg(cfg); }
+        if(obj.data){ writeWeek(obj.data); }
+        if(obj.weekStart){ anchor = startOfWeek(new Date(obj.weekStart)); }
+        if(obj.selectedCatId){ selectedCatId = obj.selectedCatId; localStorage.setItem(selKEY, selectedCatId); }
+        render();
+      }catch(err){ alert('読み込みに失敗しました: '+ err); }
+    };
+    reader.readAsText(f);
+    e.target.value = '';
+  };
+
+  // reset this week
+  resetWeekBtn.onclick = () => {
+    if(!confirm('この週の予約データを0にします。よろしいですか？')) return;
+    const w = readWeek();
+    for(const k of Object.keys(w)){
+      for(const s of cfg.slots.map(s=>s.id)) for(const c of cfg.categories) w[k][s][c.id]=0;
+      w[k].memo = '';
+    }
+    writeWeek(w); render();
+  };
+
+  // boot
+  render();
+})();
+</script>
+</body>
+</html>
