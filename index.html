@@ -319,18 +319,18 @@
       const needPM = demoData[k]?.PM?.[selectedCatId]?.need ?? 0;
       const restPM = demoData[k]?.PM?.[selectedCatId]?.stock ?? 0;
 
-      // 各日ごとにAM/PMを縦並びで配置
+      // 各日ごとに午前/午後を縦並びで配置
       const dayDiv = document.createElement('div');
       dayDiv.style.display = 'flex';
       dayDiv.style.flexDirection = 'column';
       dayDiv.innerHTML = `
         <div class="blk">
-          <div class="lbl">AM</div>
+          <div class="lbl">午前</div>
           <div class="ln">予約: ${needAM}台</div>
           <div class="ln">在庫: ${restAM}台</div>
         </div>
         <div class="blk">
-          <div class="lbl">PM</div>
+          <div class="lbl">午後</div>
           <div class="ln">予約: ${needPM}台</div>
           <div class="ln">在庫: ${restPM}台</div>
         </div>
