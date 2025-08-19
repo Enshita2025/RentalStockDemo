@@ -131,13 +131,16 @@
 
     .tab-boxy { background: #fbfbe6; color: #92400e; }
     .tab-boxy.active { background: linear-gradient(135deg,#facc15,#fde68a); color: #fff; }
+
+    .head .sat { color: #2563eb; }   /* 土曜：青 */
+    .head .sun, .head .holiday { color: #ef4444; } /* 日曜・祝日：赤 */
   </style>
 </head>
 <body>
 <header>
   <div class="wrap">
     <h1>レンタカー在庫カレンダー（社員用）</h1>
-    <div class="sub">車種ごとに在庫状況が確認できます。デモなのでテストデータで表示しています</div>
+    <div class="sub">車種ごとに在庫状況が確認できます。本番では予約サイトの予約件数に合わせた表記になりますが、今回はデモなので仮の台数で表示しています</div>
     <div class="toolbar">
       <button id="prevWeek">◀ 先週</button>
       <button id="today">今週</button>
@@ -188,31 +191,27 @@
       const k = iso(d);
       obj[k] = { AM:{}, PM:{}, memo:'' };
       // 予約台数（0～3のランダム値）
-      const amNeed = {
-        A: Math.floor(Math.random()*4),
-        B: Math.floor(Math.random()*4),
-        C: Math.floor(Math.random()*4),
-        D: Math.floor(Math.random()*4)
-      };
-      const pmNeed = {
-        A: Math.floor(Math.random()*4),
-        B: Math.floor(Math.random()*4),
-        C: Math.floor(Math.random()*4),
-        D: Math.floor(Math.random()*4)
-      };
-      // 在庫台数（合計5台になるように）
       obj[k].AM = {
-        A: 5 - amNeed.A,
-        B: 5 - amNeed.B,
-        C: 5 - amNeed.C,
-        D: 5 - amNeed.D
+        A: (() => { let n = Math.floor(Math.random()*4); return n; })(),
+        B: (() => { let n = Math.floor(Math.random()*4); return n; })(),
+        C: (() => { let n = Math.floor(Math.random()*2); return n; })(),
+        D: (() => { let n = Math.floor(Math.random()*1); return n; })()
       };
       obj[k].PM = {
-        A: 5 - pmNeed.A,
-        B: 5 - pmNeed.B,
-        C: 5 - pmNeed.C,
-        D: 5 - pmNeed.D
+        A: (() => { let n = Math.floor(Math.random()*4); return n; })(),
+        B: (() => { let n = Math.floor(Math.random()*4); return n; })(),
+        C: (() => { let n = Math.floor(Math.random()*2); return n; })(),
+        D: (() => { let n = Math.floor(Math.random()*1); return n; })()
       };
+      // 在庫台数（合計固定値になるように）
+      obj[k].AM.A = { need: obj[k].AM.A, stock: 5 - obj[k].AM.A };
+      obj[k].AM.B = { need: obj[k].AM.B, stock: 3 - obj[k].AM.B };
+      obj[k].AM.C = { need: obj[k].AM.C, stock: 2 - obj[k].AM.C };
+      obj[k].AM.D = { need: obj[k].AM.D, stock: 1 - obj[k].AM.D };
+      obj[k].PM.A = { need: obj[k].PM.A, stock: 5 - obj[k].PM.A };
+      obj[k].PM.B = { need: obj[k].PM.B, stock: 3 - obj[k].PM.B };
+      obj[k].PM.C = { need: obj[k].PM.C, stock: 2 - obj[k].PM.C };
+      obj[k].PM.D = { need: obj[k].PM.D, stock: 1 - obj[k].PM.D };
     }
     return obj;
   })();
@@ -259,6 +258,17 @@
     });
   }
 
+  // 祝日判定（例：2025年の一部祝日）
+  function isHoliday(d){
+    const holidays = [
+      '2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-03-20',
+      '2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06',
+      '2025-07-21','2025-08-11','2025-09-15','2025-09-23','2025-10-13',
+      '2025-11-03','2025-11-23','2025-12-23'
+    ];
+    return holidays.includes(iso(d));
+  }
+
   function render(){
     buildTabsUI();
     const dates = weekDates();
@@ -279,7 +289,15 @@
     head.className = 'head';
     dates.forEach(d => {
       const dv = document.createElement('div');
-      dv.innerHTML = `<div style="font-weight:700">${fmtMD(d)}</div>`;
+      let cls = '';
+      if(isHoliday(d)){
+        cls = 'holiday';
+      }else{
+        const wd = d.getDay();
+        if(wd === 0) cls = 'sun';
+        else if(wd === 6) cls = 'sat';
+      }
+      dv.innerHTML = `<div class="${cls}" style="font-weight:700">${fmtMD(d)}</div>`;
       head.appendChild(dv);
     });
 
@@ -294,14 +312,12 @@
       const k = iso(d);
 
       // AM
-      const needAM = demoData[k]?.AM?.[selectedCatId] ?? 0;
-      const fleetAM = 5; // 予約＋在庫＝5台固定
-      const restAM = fleetAM - needAM;
+      const needAM = demoData[k]?.AM?.[selectedCatId]?.need ?? 0;
+      const restAM = demoData[k]?.AM?.[selectedCatId]?.stock ?? 0;
 
       // PM
-      const needPM = demoData[k]?.PM?.[selectedCatId] ?? 0;
-      const fleetPM = 5; // 予約＋在庫＝5台固定
-      const restPM = fleetPM - needPM;
+      const needPM = demoData[k]?.PM?.[selectedCatId]?.need ?? 0;
+      const restPM = demoData[k]?.PM?.[selectedCatId]?.stock ?? 0;
 
       // 各日ごとにAM/PMを縦並びで配置
       const dayDiv = document.createElement('div');
