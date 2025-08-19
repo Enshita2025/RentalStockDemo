@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>社員向け 在庫カレンダー（閲覧用・クラス別タブ）</title>
+  <title>レンタカー在庫カレンダー（社員用）</title>
   <style>
     :root{
       --bg:#0f172a;           /* slate-900 */
@@ -86,6 +86,10 @@
     .lbl{ font-weight:700; letter-spacing:.02em }
     .ln{ font-size:13px; color:var(--muted) }
 
+    .blk .lbl, .blk .ln {
+      color: #000;
+    }
+
     .ok{ background:linear-gradient(180deg, rgba(16,185,129,.06), rgba(16,185,129,.02)) }
     .warn{ background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.02)) }
     .danger{ background:linear-gradient(180deg, rgba(239,68,68,.08), rgba(239,68,68,.02)) }
@@ -120,8 +124,8 @@
 <body>
 <header>
   <div class="wrap">
-    <h1>社員向け 在庫カレンダー（閲覧用｜クラス別タブ）</h1>
-    <div class="sub">AM/PMの2枠を1セルにまとめて表示。<strong>閲覧専用</strong>です（編集UIなし）。</div>
+    <h1>レンタカー在庫カレンダー（社員用）</h1>
+    <div class="sub">車種ごとに在庫状況が確認できます。デモなのでテストデータで表示しています</div>
     <div class="toolbar">
       <button id="prevWeek">◀ 先週</button>
       <button id="today">今週</button>
@@ -163,17 +167,40 @@
 
   // デモ用データ（閲覧専用・固定値）
   // 実装時はこの部分をAPI結果で置き換え
-  const demoData = (()=>{
+  const demoData = (() => {
     const today = new Date();
     const monday = startOfWeek(today);
     const obj = {};
-    for(let i=0;i<7;i++){
+    for(let i=0; i<7; i++){
       const d = new Date(monday); d.setDate(d.getDate()+i);
       const k = iso(d);
       obj[k] = { AM:{}, PM:{}, memo:'' };
-      // 適当な値
-      obj[k].AM = { A:1, B:2, C:1, D:0 };
-      obj[k].PM = { A:0, B:1, C:1, D:0 };
+      // 予約台数（0～3のランダム値）
+      const amNeed = {
+        A: Math.floor(Math.random()*4),
+        B: Math.floor(Math.random()*4),
+        C: Math.floor(Math.random()*4),
+        D: Math.floor(Math.random()*4)
+      };
+      const pmNeed = {
+        A: Math.floor(Math.random()*4),
+        B: Math.floor(Math.random()*4),
+        C: Math.floor(Math.random()*4),
+        D: Math.floor(Math.random()*4)
+      };
+      // 在庫台数（合計5台になるように）
+      obj[k].AM = {
+        A: 5 - amNeed.A,
+        B: 5 - amNeed.B,
+        C: 5 - amNeed.C,
+        D: 5 - amNeed.D
+      };
+      obj[k].PM = {
+        A: 5 - pmNeed.A,
+        B: 5 - pmNeed.B,
+        C: 5 - pmNeed.C,
+        D: 5 - pmNeed.D
+      };
     }
     return obj;
   })();
@@ -249,30 +276,28 @@
 
       // AM
       const needAM = demoData[k]?.AM?.[selectedCatId] ?? 0;
-      const fleetAM = (cfg.categories.find(c=>c.id===selectedCatId)?.fleet) ?? 0;
+      const fleetAM = 5; // 予約＋在庫＝5台固定
       const restAM = fleetAM - needAM;
-      const clsAM = restAM < 0 ? 'danger' : (restAM===0 ? 'warn' : 'ok');
 
       // PM
       const needPM = demoData[k]?.PM?.[selectedCatId] ?? 0;
-      const fleetPM = fleetAM;
+      const fleetPM = 5; // 予約＋在庫＝5台固定
       const restPM = fleetPM - needPM;
-      const clsPM = restPM < 0 ? 'danger' : (restPM===0 ? 'warn' : 'ok');
 
       // 各日ごとにAM/PMを縦並びで配置
       const dayDiv = document.createElement('div');
       dayDiv.style.display = 'flex';
       dayDiv.style.flexDirection = 'column';
       dayDiv.innerHTML = `
-        <div class="blk ${clsAM}">
+        <div class="blk">
           <div class="lbl">AM</div>
           <div class="ln">予約: ${needAM}台</div>
-          <div class="ln">在庫: ${fleetAM}台</div>
+          <div class="ln">在庫: ${restAM}台</div>
         </div>
-        <div class="blk ${clsPM}">
+        <div class="blk">
           <div class="lbl">PM</div>
           <div class="ln">予約: ${needPM}台</div>
-          <div class="ln">在庫: ${fleetPM}台</div>
+          <div class="ln">在庫: ${restPM}台</div>
         </div>
       `;
       cell.appendChild(dayDiv);
