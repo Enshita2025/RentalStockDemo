@@ -6,409 +6,260 @@
   <title>車両割り当て（社員用）</title>
   <style>
     :root{
-      --bg:#0d8a1e;          /* 緑のキャンバス */
-      --bg-dark:#066612;
-      --panel:#f0f7f1;       /* 盤面の背景 */
-      --panel-2:#e7ffe9;     /* 盤面の外枠 */
-      --accent:#1877ff;      /* リンク/週末強調 */
-      --tab-k: #3ecb54;      /* 軽自動車 */
-      --tab-n: #1c7ed6;      /* 小型普通 */
-      --tab-m: #f59f00;      /* ミニバン */
-      --tab-b: #7b2cbf;      /* BOXy */
-      --chip-pending:#ffdfe9;/* 未割当行の地 */
-      --chip-pending-bar:#f5a8c3; /* ピンク棒 */
-      --chip-assigned:#ffe9c6; /* 下段のベージュ */
-      --grid-border:#9ad09e;
-      --text:#1a1a1a;
-      --muted:#666;
-      --btn:#1f6feb;
-      --btn-danger:#ff4d4f;
-      --btn-text:#fff;
+      --bg:#0d8a1e; --bg-dark:#066612;
+      --panel:#f0f7f1; --panel-2:#e7ffe9;
+      --accent:#1877ff;
+      --tab-k:#3ecb54; --tab-n:#1c7ed6; --tab-m:#f59f00; --tab-b:#7b2cbf;
+      --chip-pending-bar:#f5a8c3; --chip-assigned:#ffe9c6;
+      --grid-border:#9ad09e; --text:#1a1a1a; --muted:#666;
+      --btn:#1f6feb; --btn-danger:#ff4d4f; --btn-text:#fff;
+      --row-h:38px; /* 行の高さ（AM/PMセル） */
+      --head-h:40px; /* ヘッダー行の高さ（見た目） */
     }
-    html,body{height:100%;}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
-      color:var(--text);
-    }
-    .page{
-      width:100vw;
-      height:100vh;
-    }
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;color:var(--text)}
     header{padding:12px 16px;border-bottom:1px solid #000;background:#fafafa}
     header h1{margin:0;font-size:20px}
 
-    .tabs {
-      display: flex;
-      gap: 0;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 2;
-      margin-top: 0;
-      margin-left: 0;
-    }
-
-    .toolbar {
-      position: relative;
-      padding-top: 38px;
-      background: var(--bg); /* 追加: 緑背景 */
-      display: flex;
-      align-items: center;
-    }
-
-    .tab {
-      border: 1px solid #ccc;
-      border-bottom: none;
-      background: #fff;
-      color: #333;
-      padding: 8px 24px 8px 24px;
-      border-radius: 8px 8px 0 0;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      margin-right: 2px;
-      position: relative;
-      top: 0;
-    }
-
-    .tab.active {
-      background: #f8f8f8;
-      color: #1877ff;
-      z-index: 3;
-      border-color: #1877ff #ccc #fff #ccc;
-    }
-
-    .tab[data-type="k"]{background:var(--tab-k)}
-    .tab[data-type="n"]{background:var(--tab-n)}
-    .tab[data-type="m"]{background:var(--tab-m)}
-    .tab[data-type="b"]{background:var(--tab-b)}
+    /* ツールバー・タブ */
+    .toolbar{position:relative;padding-top:38px;background:var(--bg);display:flex;align-items:center}
+    .tabs{display:flex;gap:0;position:absolute;top:0;left:0;z-index:2;margin:0}
+    .tab{border:1px solid #ccc;border-bottom:none;background:#fff;color:#333;padding:8px 24px;border-radius:8px 8px 0 0;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.08);margin-right:2px}
+    .tab[data-type="k"]{background:var(--tab-k)} .tab[data-type="n"]{background:var(--tab-n)}
+    .tab[data-type="m"]{background:var(--tab-m)} .tab[data-type="b"]{background:var(--tab-b)}
     .toolbar .spacer{flex:1}
     .nav-btn{border:2px solid #fff;background:transparent;color:#fff;border-radius:8px;padding:6px 10px;font-weight:700;cursor:pointer}
-    .actions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end; /* 右寄せ */
-      background: var(--bg);     /* 緑背景 */
-      padding: 8px 0;
-      flex: 1;
-    }
+    .actions{display:flex;gap:8px;justify-content:flex-end;background:var(--bg);padding:8px 0;flex:1}
     .btn{border:none;border-radius:8px;padding:8px 14px;font-weight:700;color:var(--btn-text);cursor:pointer}
-    .btn-primary{background:var(--btn)}
-    .btn-danger{background:var(--btn-danger)}
-
-    .calendar-header{display:grid;grid-template-columns:80px repeat(7,1fr);align-items:center;background:var(--bg-dark);color:#fff;border-bottom:2px solid #000}
-    .calendar-header .cell{padding:8px 6px;border-left:1px solid rgba(255,255,255,.3);text-align:center}
-    .calendar-header .cell:first-child{border-left:none}
-    .calendar-header a{color:#bde0ff;text-decoration:underline}
+    .btn-primary{background:var(--btn)} .btn-danger{background:var(--btn-danger)}
 
     .board{background:var(--bg);padding:10px}
-
     .matrix{background:var(--panel);border:2px solid #000;margin:10px 0;padding:10px}
-    .matrix-title{font-weight:700;margin:0 0 8px 0}
 
-    /* 汎用グリッド: 左端(行見出し) + 7日*2(AM/PM) */
-    .grid {
-      display: grid;
-      grid-template-columns: 80px repeat(14, 1fr); /* 7日×2（AM/PM） */
-      gap: 0;
-      border: 2px solid var(--grid-border);
-      background: var(--panel-2);
-    }
-    .grid .col-head {
-      padding: 6px 4px;
-      background: #444;
-      color: #fff;
-      border-right: 1px solid #fff;
-      font-weight: 700;
-      text-align: center;
-      font-size: 15px;
-    }
-    .grid .col-head.active {
-      background: var(--accent);
-      color: #fff;
-    }
-    .grid .row-label, .pending-label, .veh-label {
-      background: #fff0f5;
-      border-right: 1px solid var(--grid-border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #b04b6b;
-      font-weight: 700;
-      font-size: 14px;
-    }
-    .grid .cell {
-      position: relative;
-      height: 38px;
-      background: #fff;
-      border-top: 1px solid var(--grid-border);
-      border-right: 1px solid var(--grid-border);
-    }
-    .bar {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      line-height: 1.1;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-    }
-    .bar.pink {
-      background: var(--chip-pending-bar);
-      border: 1px solid #e07aa3;
-    }
-    .bar.beige {
-      background: var(--chip-assigned);
-      border: 1px solid #e0c091;
-    }
-
-    /* 未割当予約（上段）: 1行=トラック、バーを横に伸ばす */
-    .pending-track{display:contents}
-    .pending-label{background:#fff0f5;border-right:1px solid var(--grid-border);display:flex;align-items:center;justify-content:center;color:#b04b6b;font-weight:700}
-    .bar{position:absolute;top:0px;bottom:0px;left:0px;right:0px;border-radius:0px;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1.1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-    .bar.pink{background:var(--chip-pending-bar);border:1px solid #e07aa3}
-    .bar.beige{background:var(--chip-assigned);border:1px solid #e0c091}
-
-    /* 下段：車両ごとのスケジュール */
-    .veh-row{display:contents}
+    /* 共通グリッド */
+    .grid{display:grid;grid-template-columns:80px repeat(14,1fr);gap:0;border:2px solid var(--grid-border);background:var(--panel-2);position:relative}
+    .col-head{padding:6px 4px;background:#444;color:#fff;border-right:1px solid #fff;font-weight:700;text-align:center;font-size:15px;height:var(--head-h);display:flex;align-items:center;justify-content:center}
+    .col-head:first-child{grid-column:span 1;background:#fff;color:#333;border-right:none}
+    .col-day{grid-column:span 2}
+    .row-label{background:#fff0f5;border-right:1px solid var(--grid-border);display:flex;align-items:center;justify-content:center;color:#b04b6b;font-weight:700}
     .veh-label{background:#eef7ff;border-right:1px solid var(--grid-border);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .cell{position:relative;height:var(--row-h);background:#fff;border-top:1px solid var(--grid-border);border-right:1px solid var(--grid-border)}
 
-    /* フッタ補足 */
+    /* 一体型ピンク帯（ボタン） - 上段のみ */
+    .pending-bar{
+      position:absolute; z-index:3; /* グリッド線より前面 */
+      height:calc(var(--row-h) - 2px);
+      background:var(--chip-pending-bar);
+      border:1px solid #e07aa3; border-radius:4px;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      font-size:12px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .pending-bar:focus-visible{outline:3px solid #1877ff;outline-offset:2px}
+    .pending-bar.selected{box-shadow:inset 0 0 0 2px #fff, 0 0 0 3px #1877ff}
+
+    /* 下段：割当済みは従来通りセル内バー */
+    .bar.beige{position:absolute;inset:0;background:var(--chip-assigned);border:1px solid #e0c091;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px}
+
     footer{padding:12px 16px;color:var(--muted)}
-
     @media (max-width:960px){
-      .page{margin:0;border:none;border-top:2px solid #000;border-bottom:2px solid #000}
-      .calendar-header{grid-template-columns:64px repeat(7,1fr)}
-      .grid{grid-template-columns:64px repeat(7,1fr)}
+      .grid{grid-template-columns:64px repeat(14,1fr)}
     }
   </style>
 </head>
 <body>
-  <div class="page" id="app">
-    <header>
-      <h1>車両割り当て（社員用ページ）</h1>
-    </header>
+  <header><h1>車両割り当て（社員用ページ）</h1></header>
 
-    <div class="toolbar">
-      <div class="tabs">
-        <button class="tab" data-type="k">軽自動車</button>
-        <button class="tab" data-type="n">小型普通</button>
-        <button class="tab" data-type="m">ミニバン</button>
-        <button class="tab" data-type="b">BOXY</button>
-      </div>
-      <div class="spacer"></div>
-      <button class="nav-btn" id="prevWeek" title="前の週へ">◀</button>
-      <button class="nav-btn" id="today" title="今日">⟳</button>
-      <button class="nav-btn" id="nextWeek" title="次の週へ">▶</button>
-      <div class="actions">
-        <button class="btn btn-primary">更新確定</button>
-        <button class="btn btn-danger">キャンセル</button>
-      </div>
+  <div class="toolbar">
+    <div class="tabs">
+      <button class="tab" data-type="k">軽自動車</button>
+      <button class="tab" data-type="n">小型普通</button>
+      <button class="tab" data-type="m">ミニバン</button>
+      <button class="tab" data-type="b">BOXY</button>
     </div>
-
-    <div class="board">
-      <!-- 上段：未割当予約 -->
-      <section class="matrix">
-        <!-- <p class="matrix-title">未割当予約</p> -->
-        <div class="grid" id="pendingGrid">
-          <!-- JSで埋め込み -->
-        </div>
-      </section>
-
-      <!-- 下段：車両スケジュール -->
-      <section class="matrix">
-        <div class="grid" id="vehicleGrid">
-          <!-- JSで埋め込み -->
-        </div>
-      </section>
+    <div class="spacer"></div>
+    <button class="nav-btn" id="prevWeek" title="前の週へ">◀</button>
+    <button class="nav-btn" id="today" title="今日">⟳</button>
+    <button class="nav-btn" id="nextWeek" title="次の週へ">▶</button>
+    <div class="actions">
+      <button class="btn btn-primary" id="commit">更新確定</button>
+      <button class="btn btn-danger" id="clearSelection">選択解除</button>
     </div>
-
-    <footer>
-      ※ デモデータ。1日は <strong>AM / PM</strong> の２分割。棒は予約（上段ピンク）と、割当済み（下段ベージュ）を表します。
-    </footer>
   </div>
 
+  <div class="board">
+    <!-- 上段：未割当予約 -->
+    <section class="matrix">
+      <div class="grid" id="pendingGrid"></div>
+    </section>
+
+    <!-- 下段：車両スケジュール -->
+    <section class="matrix">
+      <div class="grid" id="vehicleGrid"></div>
+    </section>
+  </div>
+
+  <footer>
+    ※ デモ：1日は <strong>AM / PM</strong> の２分割。上段ピンク＝未割当、下段ベージュ＝割当済み。ピンク帯はセルを跨いで一体表示されます。
+  </footer>
+
   <script>
-    // 週の開始を 2025-08-18(月) としてデモ表示
+    // ---- デモ用データ ----
     const startDate = new Date('2025-08-18T00:00:00+09:00');
-
-    // 未割当予約：複数トラック（行）にピンクの横棒
-    const pendingTracks = 6; // 行数
+    const pendingTracks = 6;
     const pendingSamples = [
-      { name:'田中１',  start:'2025-08-18T09:00:00+09:00', end:'2025-08-19T12:00:00+09:00' }, // 8/18 AM ～ 8/19 AM
-      { name:'佐藤',  start:'2025-08-19T09:00:00+09:00', end:'2025-08-20T12:00:00+09:00' },
-      { name:'高木',  start:'2025-08-20T14:00:00+09:00', end:'2025-08-21T15:00:00+09:00' },
-      { name:'栗山',  start:'2025-08-19T09:00:00+09:00', end:'2025-08-19T19:00:00+09:00' },
-      { name:'田中',  start:'2025-08-22T09:00:00+09:00', end:'2025-08-22T15:00:00+09:00' },
-      { name:'米山',  start:'2025-08-24T12:00:00+09:00', end:'2025-08-24T19:00:00+09:00' }
+      { id:'p1', name:'田中１', start:'2025-08-18T09:00:00+09:00', end:'2025-08-19T12:00:00+09:00' },
+      { id:'p2', name:'佐藤',   start:'2025-08-19T09:00:00+09:00', end:'2025-08-20T12:00:00+09:00' },
+      { id:'p3', name:'高木',   start:'2025-08-20T14:00:00+09:00', end:'2025-08-21T15:00:00+09:00' },
+      { id:'p4', name:'栗山',   start:'2025-08-19T09:00:00+09:00', end:'2025-08-19T19:00:00+09:00' },
+      { id:'p5', name:'田中',   start:'2025-08-22T09:00:00+09:00', end:'2025-08-22T15:00:00+09:00' },
+      { id:'p6', name:'米山',   start:'2025-08-24T12:00:00+09:00', end:'2025-08-24T19:00:00+09:00' }
     ];
-
-    // 車両ごとの行
     const vehicles = [
-      { name:'緑EK' },
-      { name:'水カブ' },
-      { name:'奈モコ' },
-      { name:'青モコ' },
-      { name:'紫ソR' },
-      { name:'銀トツ' }
+      { name:'緑EK' }, { name:'水カブ' }, { name:'奈モコ' },
+      { name:'青モコ' }, { name:'紫ソR' }, { name:'銀トツ' }
     ];
-
-    // 割当済み（ベージュ）のサンプル
     const assigned = [
-      { vehicle:'緑EK', who:'青木', start:'2025-08-18T09:00:00+09:00', end:'2025-08-18T19:00:00+09:00' },
+      { vehicle:'緑EK',  who:'青木', start:'2025-08-18T09:00:00+09:00', end:'2025-08-18T19:00:00+09:00' },
       { vehicle:'水カブ', who:'横山', start:'2025-08-18T13:00:00+09:00', end:'2025-08-18T19:00:00+09:00' },
-      { vehicle:'緑EK', who:'青山', start:'2025-08-20T09:00:00+09:00', end:'2025-08-20T19:00:00+09:00' },
+      { vehicle:'緑EK',  who:'青山', start:'2025-08-20T09:00:00+09:00', end:'2025-08-20T19:00:00+09:00' },
       { vehicle:'青モコ', who:'小林', start:'2025-08-22T09:00:00+09:00', end:'2025-08-22T19:00:00+09:00' },
       { vehicle:'紫ソR', who:'山田', start:'2025-08-21T09:00:00+09:00', end:'2025-08-21T15:00:00+09:00' },
       { vehicle:'銀トツ', who:'米山', start:'2025-08-23T15:00:00+09:00', end:'2025-08-23T19:00:00+09:00' }
     ];
 
-    // 汎用：日→列 index, AM/PM top:6px; bottom:6p
-    function spanFromRange(startISO, endISO){
-      const s = new Date(startISO), e = new Date(endISO);
-      // 表示対象外は無視
+    // ---- ユーティリティ ----
+    const days = ['8/18(月)','8/19(火)','8/20(水)','8/21(木)','8/22(金)','8/23(土)','8/24(日)'];
+    const SLOTS_PER_WEEK = 14; // 7日×AM/PM
+    const HEAD_H = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 40;
+    const ROW_H  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--row-h'))  || 38;
+
+    function clampToWeek(s, e){
       const weekStart = new Date(startDate);
       const weekEnd = new Date(startDate); weekEnd.setDate(startDate.getDate()+7);
       if(e <= weekStart || s >= weekEnd) return null;
-
-      // 端を週にクランプ
-      const clampedS = new Date(Math.max(s, weekStart));
-      const clampedE = new Date(Math.min(e, weekEnd));
-
-      const dayIndexS = Math.floor((clampedS - weekStart)/86400000);
-      const dayIndexE = Math.floor((clampedE - weekStart)/86400000);
-
-      // 左右余白をAM/PMで比率化（AM=前半, PM=後半）
-      const leftPart = clampedS.getHours() < 12 ? 0 : 0.5;
-      const rightPart = clampedE.getHours() <= 12 ? 0.5 : 1;
-
-      return { dayIndexS, dayIndexE, leftPart, rightPart };
+      return [new Date(Math.max(s, weekStart)), new Date(Math.min(e, weekEnd))];
+    }
+    function slotFromDate(d){
+      const dayIndex = Math.floor((d - startDate)/86400000);
+      const part = d.getHours() < 12 ? 0 : 1; // AM:0, PM:1
+      return dayIndex*2 + part;
     }
 
-    function createEmptyRows(container, rows, rowLabelClass){
-      // ヘッダ行
+    // ---- グリッド描画（ヘッダー＋空セル） ----
+    function createEmptyRows(container, rows, rowLabelClass, labelProvider){
       container.innerHTML = '';
-      const days = ['8/18(月)','8/19(火)','8/20(水)','8/21(木)','8/22(金)','8/23(土)','8/24(日)'];
-      // 1列目は空欄（行ラベル用）
-      const elLabel = document.createElement('div');
-      elLabel.className = 'col-head';
-      elLabel.textContent = '';
-      elLabel.style.background = '#fff';
-      container.appendChild(elLabel);
-
-      // 日付ヘッダー（AM/PM2列分を横結合）
-      days.forEach((day, i) => {
-        const el = document.createElement('div');
-        el.className = 'col-head' + (i === 5 ? ' active' : '');
-        el.textContent = day;
-        el.style.gridColumn = 'span 2';
+      // 先頭空セル
+      const first = document.createElement('div');
+      first.className='col-head';
+      first.textContent='';
+      first.style.gridColumn='span 1';
+      container.appendChild(first);
+      // 日付ヘッダ（AM/PM 2列をまとめた見出し）
+      days.forEach(d=>{
+        const el=document.createElement('div');
+        el.className='col-head col-day';
+        el.textContent=d;
         container.appendChild(el);
       });
-
-      // トラック/行
+      // 行本体
       for(let r=0;r<rows;r++){
-        const label = document.createElement('div');
-        label.className = rowLabelClass;
-        label.textContent = r===0 && rowLabelClass==='pending-label' ? '未割当予約' : (rowLabelClass==='veh-label'? vehicles[r]?.name || '' : '');
+        const label=document.createElement('div');
+        label.className=rowLabelClass;
+        label.textContent=labelProvider ? labelProvider(r) : '';
         container.appendChild(label);
-        for(let c=0;c<14;c++){
-          const cell = document.createElement('div');
+        for(let c=0;c<SLOTS_PER_WEEK;c++){
+          const cell=document.createElement('div');
           cell.className='cell';
           container.appendChild(cell);
         }
       }
     }
 
+    // ---- 上段：未割当（ピンク帯＝一体ボタン） ----
+    let selectedPendingId = null;
     function renderPending(){
       const grid = document.getElementById('pendingGrid');
-      createEmptyRows(grid, pendingTracks, 'pending-label');
+      createEmptyRows(grid, pendingTracks, 'row-label', (r)=> r===0 ? '未割当予約' : '');
+      grid.style.position='relative';
 
-      pendingSamples.forEach((p, idx)=>{
-        const s = new Date(p.start), e = new Date(p.end);
-        const weekStart = new Date(startDate);
-        const weekEnd = new Date(startDate); weekEnd.setDate(startDate.getDate()+7);
-        if(e <= weekStart || s >= weekEnd) return;
+      pendingSamples.forEach((p, rowIdx)=>{
+        const s=new Date(p.start), e=new Date(p.end);
+        const clamped = clampToWeek(s,e);
+        if(!clamped) return;
+        const [cs, ce] = clamped;
 
-        // 端を週にクランプ
-        const clampedS = new Date(Math.max(s, weekStart));
-        const clampedE = new Date(Math.min(e, weekEnd));
+        const startSlot = slotFromDate(cs);
+        const endSlot   = slotFromDate(ce);
+        const leftPct = (startSlot / SLOTS_PER_WEEK) * 100;
+        const widthPct = ((endSlot - startSlot + 1) / SLOTS_PER_WEEK) * 100;
 
-        // 開始・終了の列番号計算（AM:0, PM:1）
-        const dayIndexS = Math.floor((clampedS - weekStart)/86400000);
-        const dayIndexE = Math.floor((clampedE - weekStart)/86400000);
+        // 行のY座標: 見出し行(1)分のセル＋ラベル列を考慮
+        const topPx = HEAD_H /*ヘッダ*/
+                    + (ROW_H * rowIdx) /* r=0 が最上段 */
+                    + 2; // 枠線微調整
 
-        const partS = clampedS.getHours() < 12 ? 0 : 1;
-        const partE = clampedE.getHours() <= 12 ? 0 : 1;
+        const btn = document.createElement('button');
+        btn.type='button';
+        btn.className='pending-bar';
+        btn.dataset.pendingId = p.id;
+        btn.style.left = leftPct + '%';
+        btn.style.width = widthPct + '%';
+        btn.style.top = topPx + 'px';
+        btn.setAttribute('aria-pressed','false');
+        btn.title = `${p.name}：${cs.toLocaleString()} ～ ${ce.toLocaleString()}`;
+        btn.textContent = p.name;
 
-        // 開始セルindex
-        const rowOffset = 1 + idx;
-        const startCellIndex = rowOffset*15 + 1 + dayIndexS*2 + partS; // 15=1+14
-        const endCellIndex = rowOffset*15 + 1 + dayIndexE*2 + partE;
+        btn.addEventListener('click', ()=>{
+          document.querySelectorAll('.pending-bar.selected').forEach(el=>el.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedPendingId = p.id;
+        });
 
-        // 田中など、バーを複数セルにまたがって描画
-        for(let i=startCellIndex; i<=endCellIndex; i++){
-          if(grid.children[i] && grid.children[i].className==='cell'){
-            const bar = document.createElement('div');
-            bar.className='bar pink';
-            bar.textContent = i===startCellIndex ? `${p.name}` : '';
-            grid.children[i].style.position='relative';
-            grid.children[i].appendChild(bar);
-          }
+        grid.appendChild(btn);
+      });
+    }
+
+    // ---- 下段：車両スケジュール（従来通りセル内にベージュ） ----
+    function renderVehicles(){
+      const grid = document.getElementById('vehicleGrid');
+      createEmptyRows(grid, vehicles.length, 'veh-label', (r)=> vehicles[r]?.name || '');
+
+      assigned.forEach(a=>{
+        const vIndex = vehicles.findIndex(v=>v.name===a.vehicle);
+        if(vIndex<0) return;
+
+        const s=new Date(a.start), e=new Date(a.end);
+        const clamped = clampToWeek(s,e);
+        if(!clamped) return;
+        const [cs, ce] = clamped;
+
+        const startSlot = slotFromDate(cs);
+        const endSlot   = slotFromDate(ce);
+
+        const rowOffset = 1 + vIndex;              // 先頭ヘッダ行を除く
+        const startCellIndex = rowOffset*(1+SLOTS_PER_WEEK) + 1 + startSlot; // (ラベル列1+14)
+        const endCellIndex   = rowOffset*(1+SLOTS_PER_WEEK) + 1 + endSlot;
+
+        for(let i=startCellIndex;i<=endCellIndex;i++){
+          const cell = grid.children[i];
+          if(!cell || cell.className!=='cell') continue;
+          const bar = document.createElement('div');
+          bar.className='bar beige';
+          if(i===startCellIndex) bar.textContent = a.who;
+          cell.appendChild(bar);
         }
       });
     }
 
-    function renderVehicles(){
-      const grid = document.getElementById('vehicleGrid');
-      createEmptyRows(grid, vehicles.length, 'veh-label');
-
-      assigned.forEach((a)=>{
-        const vIndex = vehicles.findIndex(v=>v.name===a.vehicle);
-        if(vIndex<0) return;
-
-        const s = new Date(a.start), e = new Date(a.end);
-        const weekStart = new Date(startDate);
-        const weekEnd = new Date(startDate); weekEnd.setDate(startDate.getDate()+7);
-        if(e <= weekStart || s >= weekEnd) return;
-
-        const clampedS = new Date(Math.max(s, weekStart));
-        const clampedE = new Date(Math.min(e, weekEnd));
-
-        const dayIndexS = Math.floor((clampedS - weekStart)/86400000);
-        const dayIndexE = Math.floor((clampedE - weekStart)/86400000);
-
-        const partS = clampedS.getHours() < 12 ? 0 : 1;
-        const partE = clampedE.getHours() <= 12 ? 0 : 1;
-
-        const rowOffset = 1 + vIndex;
-        const startCellIndex = rowOffset*15 + 1 + dayIndexS*2 + partS;
-        const endCellIndex = rowOffset*15 + 1 + dayIndexE*2 + partE;
-
-        for(let i=startCellIndex; i<=endCellIndex; i++){
-          if(grid.children[i] && grid.children[i].className==='cell'){
-            const bar = document.createElement('div');
-            bar.className='bar beige';
-            bar.textContent = i===startCellIndex ? `${a.who}` : '';
-            grid.children[i].style.position='relative';
-            grid.children[i].appendChild(bar);
-          }
-        }
-      });
+    // ---- 初期化・イベント ----
+    function clearSelection(){
+      selectedPendingId = null;
+      document.querySelectorAll('.pending-bar.selected').forEach(el=>el.classList.remove('selected'));
     }
 
     renderPending();
     renderVehicles();
+    document.getElementById('clearSelection')?.addEventListener('click', clearSelection);
   </script>
 </body>
 </html>
