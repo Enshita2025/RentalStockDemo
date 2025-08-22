@@ -10,7 +10,7 @@
       --panel:#f0f7f1; --panel-2:#e7ffe9;
       --accent:#1877ff;
       --tab-k:#3ecb54; --tab-n:#1c7ed6; --tab-m:#f59f00; --tab-b:#7b2cbf;
-      --chip-pending-bar:#f5a8c3; --chip-assigned:#ffe9c6;
+      --chip-pending-bar:#f5a8c3; --chip-assigned:#ffe9c6; --chip-proposed:#ffd39b;
       --grid-border:#9ad09e; --text:#1a1a1a; --muted:#666;
       --btn:#1f6feb; --btn-danger:#ff4d4f; --btn-text:#fff;
       --row-h:38px; --head-h:40px;
@@ -43,21 +43,38 @@
     .veh-label{background:#eef7ff;border-right:1px solid var(--grid-border);display:flex;align-items:center;justify-content:center;font-weight:700}
     .cell{position:relative;height:var(--row-h);background:#fff;border-top:1px solid var(--grid-border);border-right:1px solid var(--grid-border)}
 
-    /* ピッタリ座標のピンク帯（グリッド配置） */
-    .pending-bar{
-      background:var(--chip-pending-bar);
+    /* === ピンク（未割当）を本物のボタンに === */
+    .pending-btn{
       border:1px solid #e07aa3;
-      border-radius:4px;
-      cursor:pointer;
+      background:var(--chip-pending-bar);
+      border-radius:0;              /* 角丸なし */
+      height:100%;
+      width:100%;
       display:flex;align-items:center;justify-content:center;
       font-size:12px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      z-index:3; /* 枠線より前 */
+      cursor:pointer;
+      position:relative; z-index:3; /* セルより前 */
+      align-self:stretch;           /* 行高いっぱい */
     }
-    .pending-bar:focus-visible{outline:3px solid #1877ff;outline-offset:2px}
-    .pending-bar.selected{box-shadow:inset 0 0 0 2px #fff, 0 0 0 3px #1877ff}
+    .pending-btn:focus-visible{outline:3px solid #1877ff;outline-offset:2px}
+    .pending-btn.selected{box-shadow:inset 0 0 0 2px #fff, 0 0 0 3px #1877ff}
 
-    /* 下段：割当済み（セル内） */
-    .bar.beige{position:absolute;inset:0;background:var(--chip-assigned);border:1px solid #e0c091;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px}
+    /* === オレンジ（仮割当）もボタンで === */
+    .assign-btn{
+      border:1px solid #f0a44a;
+      background:var(--chip-proposed);
+      border-radius:0;
+      height:100%;
+      width:100%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      cursor:pointer;
+      position:relative; z-index:2;
+      align-self:stretch;
+    }
+
+    /* 既存ベージュ（確定）＝セル内バーのまま */
+    .bar.beige{position:absolute;inset:0;background:var(--chip-assigned);border:1px solid #e0c091;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:12px}
 
     footer{padding:12px 16px;color:var(--muted)}
     @media (max-width:960px){.grid{grid-template-columns:64px repeat(14,1fr)}}
@@ -93,11 +110,11 @@
   </div>
 
   <footer>
-    ※ デモ：1日は <strong>AM / PM</strong> の２分割。上段ピンク＝未割当（セル枠に完全一致）、下段ベージュ＝割当済み。
+    ※ 操作：上段ピンク（ボタン）クリック → 下段の車両行をクリックで同レンジにオレンジ（仮割当）を配置。角丸はすべて無し。
   </footer>
 
   <script>
-    // ---- デモデータ ----
+    // ===== デモデータ =====
     const startDate = new Date('2025-08-18T00:00:00+09:00');
     const pendingTracks = 6;
     const pendingSamples = [
@@ -124,7 +141,6 @@
     const days = ['8/18(月)','8/19(火)','8/20(水)','8/21(木)','8/22(金)','8/23(土)','8/24(日)'];
     const SLOTS_PER_WEEK = 14; // 7日×AM/PM
 
-    // ユーティリティ
     function clampToWeek(s, e){
       const weekStart = new Date(startDate);
       const weekEnd = new Date(startDate); weekEnd.setDate(startDate.getDate()+7);
@@ -137,27 +153,28 @@
       return dayIndex*2 + part;
     }
 
-    // グリッド（ヘッダ＋空セル）
-    function createEmptyRows(container, rows, rowLabelClass, labelProvider){
-      container.innerHTML = '';
+    // ====== PENDING GRID ======
+    let selectedRange = null; // {startSlot,endSlot,label,btn}
+    function createPendingGrid(container, rows){
+      container.innerHTML='';
       // 先頭空セル（ラベル列）
       const first = document.createElement('div');
       first.className='col-head';
       first.textContent='';
       first.style.gridColumn='span 1';
       container.appendChild(first);
-      // 日付ヘッダ（AM/PM 2列分を1つの見出しで）
+      // 日付ヘッダ（各日=2列ぶん）
       days.forEach(d=>{
         const el=document.createElement('div');
         el.className='col-head col-day';
         el.textContent=d;
         container.appendChild(el);
       });
-      // 行本体
+      // 行：ラベル＋セル
       for(let r=0;r<rows;r++){
         const label=document.createElement('div');
-        label.className=rowLabelClass;
-        label.textContent=labelProvider ? labelProvider(r) : '';
+        label.className='row-label';
+        label.textContent = (r===0)?'未割当予約':'';
         container.appendChild(label);
         for(let c=0;c<SLOTS_PER_WEEK;c++){
           const cell=document.createElement('div');
@@ -167,11 +184,9 @@
       }
     }
 
-    // 上段：未割当（ピンク帯＝グリッド配置）
-    let selectedPendingId = null;
     function renderPending(){
       const grid = document.getElementById('pendingGrid');
-      createEmptyRows(grid, pendingTracks, 'row-label', (r)=> r===0 ? '未割当予約' : '');
+      createPendingGrid(grid, pendingTracks);
 
       pendingSamples.forEach((p, idx)=>{
         const s = new Date(p.start), e = new Date(p.end);
@@ -183,39 +198,74 @@
         const endSlot   = slotFromDate(ce);
 
         // グリッド列は 1=ラベル列、2..15=AM/PM14スロット
-        const startCol = 2 + startSlot;      // 開始スロットの列
-        const endCol   = 2 + endSlot;        // 終了スロットの列
-        const row      = 2 + idx;            // 1行目=ヘッダ → 未割当の1行目は2
+        const startCol = 2 + startSlot;
+        const endCol   = 2 + endSlot;   // inclusive
+        const row      = 2 + idx;       // 1=ヘッダ → 2=未割当1行目
 
         const btn = document.createElement('button');
         btn.type='button';
-        btn.className='pending-bar';
-        btn.dataset.pendingId = p.id;
-        btn.textContent = p.name;
+        btn.className='pending-btn';
+        btn.textContent=p.name;
+        btn.dataset.startSlot = startSlot;
+        btn.dataset.endSlot   = endSlot;
+        btn.dataset.label     = p.name;
 
-        // 端点を含む横幅にするため endCol の次の列を終了点に指定
         btn.style.gridColumn = `${startCol} / ${endCol + 1}`;
         btn.style.gridRow    = `${row} / ${row + 1}`;
 
-        btn.addEventListener('click', ()=>{
-          document.querySelectorAll('.pending-bar.selected').forEach(el=>el.classList.remove('selected'));
+        btn.addEventListener('click', (ev)=>{
+          document.querySelectorAll('.pending-btn.selected').forEach(el=>el.classList.remove('selected'));
           btn.classList.add('selected');
-          selectedPendingId = p.id;
+          selectedRange = { startSlot, endSlot, label:p.name, btn };
+          ev.stopPropagation();
         });
 
-        // 重要：グリッドの子として追加（セルと同座標で重なり、枠に一致）
         grid.appendChild(btn);
       });
     }
 
-    // 下段：車両スケジュール（セル内ベージュ）
+    // ====== VEHICLE GRID ======
+    function createVehicleGrid(container, rows){
+      container.innerHTML='';
+      // 先頭空セル（ラベル列）
+      const first = document.createElement('div');
+      first.className='col-head';
+      first.textContent='';
+      first.style.gridColumn='span 1';
+      container.appendChild(first);
+      // 日付ヘッダ
+      days.forEach(d=>{
+        const el=document.createElement('div');
+        el.className='col-head col-day';
+        el.textContent=d;
+        container.appendChild(el);
+      });
+      // 各行
+      for(let r=0;r<rows;r++){
+        const label=document.createElement('div');
+        label.className='veh-label';
+        label.textContent=vehicles[r]?.name || '';
+        label.dataset.vIndex = r; // クリック識別用
+        container.appendChild(label);
+        for(let c=0;c<SLOTS_PER_WEEK;c++){
+          const cell=document.createElement('div');
+          cell.className='cell';
+          cell.dataset.row = r;
+          cell.dataset.slot = c;
+          container.appendChild(cell);
+        }
+      }
+    }
+
     function renderVehicles(){
       const grid = document.getElementById('vehicleGrid');
-      createEmptyRows(grid, vehicles.length, 'veh-label', (r)=> vehicles[r]?.name || '');
+      createVehicleGrid(grid, vehicles.length);
 
+      // 既存ベージュ（確定）の描画は従来通りセル内
       assigned.forEach(a=>{
         const vIndex = vehicles.findIndex(v=>v.name===a.vehicle);
         if(vIndex<0) return;
+
         const s=new Date(a.start), e=new Date(a.end);
         const clamped = clampToWeek(s,e);
         if(!clamped) return;
@@ -224,8 +274,8 @@
         const startSlot = slotFromDate(cs);
         const endSlot   = slotFromDate(ce);
 
-        const rowOffset = 1 + vIndex; // 先頭ヘッダ行を除く
-        const startCellIndex = rowOffset*(1+SLOTS_PER_WEEK) + 1 + startSlot; // (ラベル1+14)
+        const rowOffset = 1 + vIndex;
+        const startCellIndex = rowOffset*(1+SLOTS_PER_WEEK) + 1 + startSlot;
         const endCellIndex   = rowOffset*(1+SLOTS_PER_WEEK) + 1 + endSlot;
 
         for(let i=startCellIndex;i<=endCellIndex;i++){
@@ -237,13 +287,52 @@
           cell.appendChild(bar);
         }
       });
+
+      // クリックでオレンジ（仮割当）を配置
+      grid.addEventListener('click', (ev)=>{
+        if(!selectedRange) return; // ピンク未選択なら無視
+
+        let vIndex = null;
+        const labelEl = ev.target.closest('.veh-label');
+        if(labelEl) vIndex = parseInt(labelEl.dataset.vIndex, 10);
+
+        if(vIndex===null || Number.isNaN(vIndex)){
+          const cellEl = ev.target.closest('.cell');
+          if(cellEl) vIndex = parseInt(cellEl.dataset.row, 10);
+        }
+        if(vIndex===null || Number.isNaN(vIndex)) return;
+
+        addOrangeAssign(grid, vIndex, selectedRange.startSlot, selectedRange.endSlot, selectedRange.label);
+      });
+    }
+
+    function addOrangeAssign(grid, vIndex, startSlot, endSlot, label){
+      const startCol = 2 + startSlot;
+      const endCol   = 2 + endSlot;
+      const row      = 2 + vIndex;
+
+      // 同レンジの既存オレンジを消す（重複防止）
+      const key = `v${vIndex}-${startSlot}-${endSlot}`;
+      grid.querySelectorAll(`.assign-btn[data-key="${key}"]`).forEach(n=>n.remove());
+
+      const btn = document.createElement('button');
+      btn.type='button';
+      btn.className='assign-btn';
+      btn.dataset.key = key;
+      btn.dataset.vIndex = vIndex;
+      btn.textContent = label;
+      btn.style.gridColumn = `${startCol} / ${endCol + 1}`;
+      btn.style.gridRow    = `${row} / ${row + 1}`;
+
+      grid.appendChild(btn);
     }
 
     function clearSelection(){
-      selectedPendingId = null;
-      document.querySelectorAll('.pending-bar.selected').forEach(el=>el.classList.remove('selected'));
+      selectedRange = null;
+      document.querySelectorAll('.pending-btn.selected').forEach(el=>el.classList.remove('selected'));
     }
 
+    // 初期描画
     renderPending();
     renderVehicles();
     document.getElementById('clearSelection')?.addEventListener('click', clearSelection);
