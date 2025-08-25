@@ -32,18 +32,58 @@
     .btn-primary{background:var(--btn)} .btn-danger{background:var(--btn-danger)}
 
     .board{background:var(--bg);padding:10px}
-    .matrix{background:var(--panel);border:2px solid #000;margin:10px 0;padding:10px}
+    .matrix{background:var(--panel);margin:10px 0;padding:10px}
 
-    /* 共通グリッド */
-    .grid{display:grid;grid-template-columns:80px repeat(14,1fr);gap:0;border:2px solid var(--grid-border);background:var(--panel-2);position:relative}
-    .col-head{padding:6px 4px;background:#444;color:#fff;border-right:1px solid #fff;font-weight:700;text-align:center;font-size:15px;height:var(--head-h);display:flex;align-items:center;justify-content:center}
-    .col-head:first-child{grid-column:span 1;background:#fff;color:#333;border-right:none}
+    /* 共通グリッド（親に上・左だけ 1px 線） */
+    .grid{
+      display:grid;
+      grid-template-columns:80px repeat(14,1fr);
+      gap:0;
+      background:var(--panel-2);
+      position:relative;
+      border-top:1px solid var(--grid-border);
+      border-left:1px solid var(--grid-border);
+    }
+
+    /* ヘッダーセル：右・下だけ。先頭ヘッダーは1列目固定 */
+    .col-head{
+      padding:6px 4px;background:#444;color:#fff;
+      font-weight:700;text-align:center;font-size:15px;height:var(--head-h);
+      display:flex;align-items:center;justify-content:center;
+      border-right:1px solid var(--grid-border);
+      border-bottom:1px solid var(--grid-border);
+    }
+    .col-head:first-child{
+      background:#fff;color:#333;
+      grid-column:1 / 2;
+      grid-row:1 / 2;
+    }
     .col-day{grid-column:span 2}
-    .row-label{background:#fff0f5;border-right:1px solid var(--grid-border);display:flex;align-items:center;justify-content:center;color:#b04b6b;font-weight:700}
-    .veh-label{background:#eef7ff;border-right:1px solid var(--grid-border);display:flex;align-items:center;justify-content:center;font-weight:700}
-    .cell{position:relative;height:var(--row-h);background:#fff;border-top:1px solid var(--grid-border);border-right:1px solid var(--grid-border)}
 
-    /* ピンク（未割当）= 本物のボタン（グリッド座標で一体表示） */
+    /* ラベル列：白／右・下のみ。必ず1列目に固定 */
+    .row-label{
+      background:#fff;color:#b04b6b;font-weight:700;display:flex;align-items:center;justify-content:center;
+      border-right:1px solid var(--grid-border);
+      border-bottom:1px solid var(--grid-border);
+      grid-column:1 / 2;
+    }
+    .veh-label{
+      background:#eef7ff;font-weight:700;display:flex;align-items:center;justify-content:center;
+      border-right:1px solid var(--grid-border);
+      border-bottom:1px solid var(--grid-border);
+      grid-column:1 / 2;
+    }
+
+    /* 本体セル：右・下のみ（二重線回避） */
+    .cell{
+      position:relative;
+      height:var(--row-h);
+      background:#fff;
+      border-right:1px solid var(--grid-border);
+      border-bottom:1px solid var(--grid-border);
+    }
+
+    /* ピンク（未割当）= 1要素でセルをまたぐ（グリッド座標で配置） */
     .pending-btn{
       border:1px solid #e07aa3;background:var(--chip-pending-bar);border-radius:0;
       height:100%;width:100%;display:flex;align-items:center;justify-content:center;
@@ -54,13 +94,18 @@
     .pending-btn.selected{box-shadow:inset 0 0 0 2px #fff, 0 0 0 3px #1877ff}
 
     /* ベージュ（確定）= セル内絶対配置 */
-    .bar.beige{position:absolute;inset:0;background:var(--chip-assigned);border:1px solid #e0c091;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:12px;z-index:1}
+    .bar.beige{
+      position:absolute; inset:0; z-index:1;
+      background:var(--chip-assigned); border:1px solid #e0c091; border-radius:0;
+      display:flex; align-items:center; justify-content:center; font-size:12px;
+    }
 
-    /* オレンジ（仮割当）= セル内絶対配置（レイアウト非干渉） */
+    /* オレンジ（仮割当）= セル内絶対配置 */
     .assign-btn{
-      position:absolute;inset:0;z-index:2;border:1px solid #f0a44a;background:var(--chip-proposed);
-      border-radius:0;display:flex;align-items:center;justify-content:center;
-      font-size:12px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;
+      position:absolute; inset:0; z-index:2;
+      border:1px solid #f0a44a; background:var(--chip-proposed); border-radius:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
     }
 
     footer{padding:12px 16px;color:var(--muted)}
@@ -105,7 +150,8 @@
   <script>
     // ===== デモデータ =====
     const startDate = new Date('2025-08-18T00:00:00+09:00');
-    const pendingTracks = 6;
+    const pendingTracks = 6; // 上段はヘッダー除いて6行固定
+
     const pendingSamples = [
       { id:'p1', name:'田中１', start:'2025-08-18T09:00:00+09:00', end:'2025-08-19T12:00:00+09:00' },
       { id:'p2', name:'佐藤',   start:'2025-08-19T09:00:00+09:00', end:'2025-08-20T12:00:00+09:00' },
@@ -147,43 +193,57 @@
 
     function createEmptyRows(container, rows, rowLabelClass, labelProvider){
       container.innerHTML = '';
-      // 先頭ラベル列(空)
+
+      // ヘッダー行（grid-row:1 固定）
       const first = document.createElement('div');
       first.className='col-head';
       first.textContent='';
-      first.style.gridColumn='span 1';
+      first.style.gridColumn='1 / 2';
+      first.style.gridRow='1 / 2';
       container.appendChild(first);
-      // 日付ヘッダ（各日=AM/PM 2列ぶん）
-      days.forEach(d=>{
+
+      days.forEach((d, i)=>{
         const el=document.createElement('div');
         el.className='col-head col-day';
         el.textContent=d;
+        el.style.gridColumn = `${2 + i*2} / ${2 + i*2 + 2}`; // 2列分
+        el.style.gridRow    = '1 / 2';
         container.appendChild(el);
       });
-      // 本体行
+
+      // 本体行（各セル・ラベルに「明示的に」座標を与える）
       for(let r=0;r<rows;r++){
+        const rowLine = 2 + r; // 2行目から本体
+
         const label=document.createElement('div');
         label.className=rowLabelClass;
         label.textContent=labelProvider ? labelProvider(r) : '';
+        label.style.gridColumn='1 / 2';
+        label.style.gridRow   =`${rowLine} / ${rowLine+1}`;
         if(rowLabelClass==='veh-label') label.dataset.vIndex=r;
         container.appendChild(label);
+
         for(let c=0;c<SLOTS_PER_WEEK;c++){
+          const colStart = 2 + c;
           const cell=document.createElement('div');
           cell.className='cell';
           cell.dataset.row=r;
           cell.dataset.slot=c;
+          cell.style.gridColumn = `${colStart} / ${colStart+1}`;
+          cell.style.gridRow    = `${rowLine} / ${rowLine+1}`;
           container.appendChild(cell);
         }
       }
     }
 
-    // ---- 上段：未割当（ピンクボタン） ----
+    // ---- 上段：未割当（ピンク=1要素でスパン） ----
     let selectedRange = null; // {id,startSlot,endSlot,label}
     function renderPending(){
       const grid = document.getElementById('pendingGrid');
       createEmptyRows(grid, pendingTracks, 'row-label', (r)=> r===0 ? '未割当予約' : '');
 
-      pendingSamples.forEach((p, idx)=>{
+      // 6件まで、各行に1つのピンクボタンを「スパン配置」
+      pendingSamples.slice(0, pendingTracks).forEach((p, idx)=>{
         const s = new Date(p.start), e = new Date(p.end);
         const clamped = clampToWeek(s,e);
         if(!clamped) return;
@@ -192,22 +252,21 @@
         const startSlot = slotFromDate(cs);
         const endSlot   = slotFromDate(ce);
 
-        // グリッド列は 1=ラベル列、2..15=AM/PM14スロット
-        const startCol = 2 + startSlot;
-        const endCol   = 2 + endSlot;
-        const row      = 2 + idx; // 1=ヘッダ
+        const startCol = 2 + startSlot;     // 1=ラベル列、2..15=スロット
+        const endCol   = 2 + endSlot + 1;   // CSS grid の終端は+1
+        const row      = 2 + idx;           // ヘッダーの次の行
 
         const btn = document.createElement('button');
         btn.type='button';
         btn.className='pending-btn';
         btn.textContent=p.name;
         btn.title = `${p.name}：${cs.toLocaleString()} ～ ${ce.toLocaleString()}`;
-        btn.style.gridColumn = `${startCol} / ${endCol + 1}`;
+        btn.style.gridColumn = `${startCol} / ${endCol}`;
         btn.style.gridRow    = `${row} / ${row + 1}`;
-        btn.dataset.user = p.id; // ← どのユーザーか
+        btn.dataset.user = p.id;
 
         btn.addEventListener('click', (ev)=>{
-          document.querySelectorAll('.pending-btn.selected').forEach(el=>el.classList.remove('selected'));
+          grid.querySelectorAll('.pending-btn.selected').forEach(el=>el.classList.remove('selected'));
           btn.classList.add('selected');
           selectedRange = { id:p.id, startSlot, endSlot, label:p.name };
           ev.stopPropagation();
@@ -256,9 +315,10 @@
     }
 
     // ---- 共通：セル範囲にベージュ（div）を敷く ----
+    const S = { HEADER_CELLS, ROW_STRIDE };
     function fillRangeWithBar(grid, vIndex, startSlot, endSlot, label, colorClass){
-      const startCellIndex = HEADER_CELLS + vIndex*ROW_STRIDE + 1 + startSlot;
-      const endCellIndex   = HEADER_CELLS + vIndex*ROW_STRIDE + 1 + endSlot;
+      const startCellIndex = S.HEADER_CELLS + vIndex*S.ROW_STRIDE + 1 + startSlot;
+      const endCellIndex   = S.HEADER_CELLS + vIndex*S.ROW_STRIDE + 1 + endSlot;
       for(let i=startCellIndex;i<=endCellIndex;i++){
         const cell = grid.children[i];
         if(!cell || cell.className!=='cell') continue;
@@ -272,8 +332,8 @@
     // ---- 共通：セル範囲にオレンジ（button）を敷く（ユーザーIDを付与） ----
     function fillRangeWithButton(grid, vIndex, startSlot, endSlot, label, btnClass, userId){
       const key = `${vIndex}-${startSlot}-${endSlot}`;
-      const startCellIndex = HEADER_CELLS + vIndex*ROW_STRIDE + 1 + startSlot;
-      const endCellIndex   = HEADER_CELLS + vIndex*ROW_STRIDE + 1 + endSlot;
+      const startCellIndex = S.HEADER_CELLS + vIndex*S.ROW_STRIDE + 1 + startSlot;
+      const endCellIndex   = S.HEADER_CELLS + vIndex*S.ROW_STRIDE + 1 + endSlot;
 
       for(let i=startCellIndex;i<=endCellIndex;i++){
         const cell = grid.children[i];
@@ -309,7 +369,6 @@
       return n ? (n.textContent || '') : '';
     }
     function parseKey(key){
-      // "vIndex-startSlot-endSlot"
       const [v,start,end] = key.split('-').map(Number);
       return { vIndex:v, startSlot:start, endSlot:end };
     }
@@ -318,13 +377,10 @@
     document.getElementById('commit')?.addEventListener('click', ()=>{
       const grid = document.getElementById('vehicleGrid');
 
-      // 対象ユーザーID（未選択なら null）
       const uid = selectedRange?.id || null;
-
       const keys = uid ? getProposalKeysByUser(grid, uid) : getAllProposalKeys(grid);
       if(keys.length === 0) return;
 
-      // キーごとに：オレンジを削除 → ベージュを敷く
       keys.forEach(key=>{
         const { vIndex, startSlot, endSlot } = parseKey(key);
         const label = getLabelForKey(grid, key);
@@ -332,7 +388,6 @@
         fillRangeWithBar(grid, vIndex, startSlot, endSlot, label, 'beige');
       });
 
-      // ピンク（未割当）を削除（選択中ユーザーのみ）
       if(uid){
         document.querySelectorAll(`#pendingGrid .pending-btn[data-user="${uid}"]`).forEach(n=>n.remove());
         selectedRange = null;
