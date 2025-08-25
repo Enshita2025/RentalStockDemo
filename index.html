@@ -309,6 +309,10 @@
         // 直接ベージュ（確定・ボタン）をスパン配置（同ユーザーの既存ベージュは先に削除）
         removeAllUserProposals(grid, selectedRange.id);
         removeAllUserAssigned(grid, selectedRange.id);
+        // 既存ベージュと重なる場合は配置しない
+        if(hasOverlapAssigned(grid, vIndex, selectedRange.startSlot, selectedRange.endSlot)){
+          return; // 配置せず終了
+        }
         fillRangeWithAssigned(grid, vIndex, selectedRange.startSlot, selectedRange.endSlot, selectedRange.label, selectedRange.id);
       });
     }
@@ -324,6 +328,10 @@
       btn.className='assigned-btn';
       btn.textContent = label;
       if(userId) btn.dataset.user = userId; // 同一ユーザーの再配置時に重複を防ぐ
+      // 重なり判定用メタデータ
+      btn.dataset.v = String(vIndex);
+      btn.dataset.start = String(startSlot);
+      btn.dataset.end = String(endSlot);
       btn.style.gridColumn = `${startCol} / ${endCol}`;
       btn.style.gridRow    = `${row} / ${row+1}`;
       grid.appendChild(btn);
@@ -378,6 +386,20 @@
     function removeAllUserAssigned(grid, userId){
       if(!userId) return;
       grid.querySelectorAll(`.assigned-btn[data-user="${userId}"]`).forEach(n=>n.remove());
+    }
+    // 追加: 既存ベージュとの重なり判定（同じ車両行 vIndex で区間が交差するか）
+    function hasOverlapAssigned(grid, vIndex, startSlot, endSlot){
+      const nodes = grid.querySelectorAll(`.assigned-btn[data-v="${vIndex}"]`);
+      for(const n of nodes){
+        const s = parseInt(n.dataset.start, 10);
+        const e = parseInt(n.dataset.end, 10);
+        if(Number.isNaN(s) || Number.isNaN(e)) continue;
+        // 区間 [startSlot, endSlot] と [s, e] が交差
+        if(Math.max(startSlot, s) <= Math.min(endSlot, e)){
+          return true;
+        }
+      }
+      return false;
     }
     function parseKey(key){
       const [v,start,end] = key.split('-').map(Number);
